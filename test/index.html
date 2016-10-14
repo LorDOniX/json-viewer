@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Test page</title>
+
+		<script type="text/javascript" src="../src/json-viewer.js"></script>
+		<link rel="stylesheet" type="text/css" href="../src/json-viewer.css">
+	</head>
+<body>
+	<h1 style="text-decoration: underline;">JSONViewer test page</h1>
+	<h2>JSON stringified value:</h2>
+	<textarea style="width: 100%; min-height: 100px;"></textarea>
+	<p>Choose action:</p>
+	<div>
+		<button type="button" class="load-json">Load JSON</button>
+		<button type="button" class="collapse">Collapse to level 1</button>
+		<button type="button" class="maxlvl">Show JSON to level 1</button>
+	</div>
+	<h2>Output:</h2>
+	<div id="json"></div>
+	<script>
+		var jsonObj = {};
+		var jsonViewer = new JSONViewer();
+		document.querySelector("#json").appendChild(jsonViewer.getContainer());
+
+		var textarea = document.querySelector("textarea");
+		textarea.value = JSON.stringify({
+			key1: "string",
+			key2: 12345,
+			key3: new Date(),
+			key4: [],
+			key5: [
+				123,
+				"123",
+				{
+					a: 5,
+					b: 6,
+					c: null,
+					d: true
+				}
+			],
+			key6: {
+				a: 1,
+				b: 3,
+				c: {
+					d: 4
+				}
+			}
+		});
+
+		// textarea value to JSON object
+		var setJSON = function() {
+			try {
+				var value = textarea.value;
+				jsonObj = JSON.parse(value);
+			}
+			catch (err) {
+				alert(err);
+			}
+		};
+
+		// load default value
+		setJSON();
+
+		var loadJsonBtn = document.querySelector("button.load-json");
+		var collapseBtn = document.querySelector("button.collapse");
+		var maxlvlBtn = document.querySelector("button.maxlvl");
+
+		loadJsonBtn.addEventListener("click", function() {
+			setJSON();
+			jsonViewer.showJSON(jsonObj);
+		});
+
+		collapseBtn.addEventListener("click", function() {
+			jsonViewer.showJSON(jsonObj, null, 1);
+		});
+
+		maxlvlBtn.addEventListener("click", function() {
+			jsonViewer.showJSON(jsonObj, 1);
+		});
+	</script>
+	</body>
+</html>
