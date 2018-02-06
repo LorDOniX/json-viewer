@@ -1,7 +1,7 @@
 /**
  * JSONViewer - by Roman Makudera 2016 (c) MIT licence.
  */
-JSONViewer = (function() {
+var JSONViewer = (function() {
 	var JSONViewer = function() {
 		this._dom = {};
 		this._dom.container = document.createElement("pre");
@@ -230,7 +230,7 @@ JSONViewer = (function() {
 		var txt = value;
 
 		if (type === "string") {
-			txt = '"' + value + '"';
+			txt = '"' + value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '"';
 		}
 		else if (value === null) {
 			type = "null";
