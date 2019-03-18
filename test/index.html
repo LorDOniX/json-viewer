@@ -26,7 +26,7 @@
 
 		var textarea = document.querySelector("textarea");
 		textarea.value = JSON.stringify({
-			key1: "string",
+			key1: "<script>alert('no xss!')<\/script>",
 			key2: 12345,
 			key3: new Date(),
 			key4: [],
