@@ -2,10 +2,6 @@
  * JSONViewer - by Roman Makudera 2016 (c) MIT licence.
  */
 var JSONViewer = (function(document) {
-	var Object_prototype_toString = ({}).toString;
-	var DatePrototypeString = Object_prototype_toString.call(new Date);
-
-
 	/** @constructor */
 	function JSONViewer() {
 		this._dom_container = document.createElement("pre");
