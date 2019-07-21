@@ -15,14 +15,14 @@ var JSONViewer = (function(document) {
 	 * Visualise JSON object.
 	 * 
 	 * @param {Object|Array} json Input value
+	 * @param {Number} [inputMaxLvl] Process only to max level, where 0..n, -1 unlimited
+	 * @param {Number} [inputColAt] Collapse at level, where 0..n, -1 unlimited
 	 */
-	JSONViewer.prototype.showJSON = function(jsonValue) {
+	JSONViewer.prototype.showJSON = function(jsonValue, inputMaxLvl, inputColAt) {
 		// Process only to maxLvl, where 0..n, -1 unlimited
-		var maxLvl = typeof maxLvl === "number" ? maxLvl : -1; // max level
+		var maxLvl = typeof inputMaxLvl === "number" ? inputMaxLvl : -1; // max level
 		// Collapse at level colAt, where 0..n, -1 unlimited
-		var colAt = typeof colAt === "number" ? colAt : -1; // collapse at
-		
-		this.value = jsonValue;
+		var colAt = typeof inputColAt === "number" ? inputColAt : -1; // collapse at
 		
 		this._dom_container.innerHTML = "";
 		walkJSONTree(this._dom_container, jsonValue, maxLvl, colAt, 0);
@@ -47,8 +47,9 @@ var JSONViewer = (function(document) {
 	 * @param {Number} lvl Current level
 	 */
 	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
-		var realValue = typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
-		if (typeof realValue === "object" && realValue !== null) {
+		var isDate = Object_prototype_toString.call(value) ==== DatePrototypeAsString;
+		var realValue = !isDate && typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
+		if (typeof realValue === "object" && realValue !== null && !isDate) {
 			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
 			var isCollapse = colAt >= 0 && lvl >= colAt;
 			
@@ -96,8 +97,6 @@ var JSONViewer = (function(document) {
 					var li = document.createElement("li");
 
 					if (typeof item === "object") {
-						var isEmpty = false;
-
 						// null && date
 						if (!item || item instanceof Date) {
 							li.appendChild(document.createTextNode(isArray ? "" : key + ": "));
@@ -194,7 +193,7 @@ var JSONViewer = (function(document) {
 			}
 		} else {
 			// simple values
-			outputParent.appendChild( createSimpleViewOf(value) );
+			outputParent.appendChild( createSimpleViewOf(value, isDate) );
 		}
 	};
 
@@ -204,29 +203,24 @@ var JSONViewer = (function(document) {
 	 * @param  {Number|String|null|undefined|Date} value Input value
 	 * @return {Element}
 	 */
-	function createSimpleViewOf(value) {
+	function createSimpleViewOf(value, isDate) {
 		var spanEl = document.createElement("span");
 		var type = typeof value;
 		var asText = "" + value;
 
 		if (type === "string") {
-			asText = '"' + value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '"';
+			asText = '"' + value + '"';
 		} else if (value === null) {
 			type = "null";
 			//asText = "null";
-		} else if (Object_prototype_toString.call(value) === DatePrototypeAsString) {
-			type = "date";
-			asText = value.toJSON();//.toString();
+		} else if (isDate) {
+			type = "Date";
+			asText = value.toLocaleString();
 		}
+		// there is no need to take care of Date objects because they have already been delt with by toJSON
 
 		spanEl.classList.add("type-" + type);
-		if ("textContent" in spanEl) {
-			// All non-microsoft browsers
-			spanEl.textContent = asText;
-		} else {
-			// Internet Explorer
-			spanEl.innerText = asText;
-		}
+		spanEl.textContent = asText;
 
 		return spanEl;
 	};
