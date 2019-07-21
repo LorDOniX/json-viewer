@@ -47,7 +47,7 @@ var JSONViewer = (function(document) {
 	 * @param {Number} lvl Current level
 	 */
 	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
-		var isDate = Object_prototype_toString.call(value) ==== DatePrototypeAsString;
+		var isDate = Object_prototype_toString.call(value) === DatePrototypeAsString;
 		var realValue = !isDate && typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
 		if (typeof realValue === "object" && realValue !== null && !isDate) {
 			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
