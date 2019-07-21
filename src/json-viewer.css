@@ -15,7 +15,7 @@
 	display: none;
 }
 
-.json-viewer ul li .type-string, {
+.json-viewer ul li .type-string {
 	color: #0B7500;
 }
 
