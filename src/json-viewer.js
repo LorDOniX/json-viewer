@@ -2,6 +2,9 @@
  * JSONViewer - by Roman Makudera 2016 (c) MIT licence.
  */
 var JSONViewer = (function(document) {
+	var Object_prototype_toString = ({}).toString;
+	var DatePrototypeAsString = Object_prototype_toString.call(new Date);
+	
 	/** @constructor */
 	function JSONViewer() {
 		this._dom_container = document.createElement("pre");
@@ -12,11 +15,11 @@ var JSONViewer = (function(document) {
 	 * Visualise JSON object.
 	 * 
 	 * @param {Object|Array} json Input value
-	 * @param {Number} [maxLvl] Process only to max level, where 0..n, -1 unlimited
-	 * @param {Number} [colAt] Collapse at level, where 0..n, -1 unlimited
 	 */
 	JSONViewer.prototype.showJSON = function(jsonValue) {
+		// Process only to maxLvl, where 0..n, -1 unlimited
 		var maxLvl = typeof maxLvl === "number" ? maxLvl : -1; // max level
+		// Collapse at level colAt, where 0..n, -1 unlimited
 		var colAt = typeof colAt === "number" ? colAt : -1; // collapse at
 		
 		this.value = jsonValue;
@@ -42,12 +45,10 @@ var JSONViewer = (function(document) {
 	 * @param {Number} maxLvl Process only to max level, where 0..n, -1 unlimited
 	 * @param {Number} colAt Collapse at level, where 0..n, -1 unlimited
 	 * @param {Number} lvl Current level
-	 * @return {DocumentFragment}
 	 */
 	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
 		var realValue = typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
 		if (typeof realValue === "object" && realValue !== null) {
-			var frag = document.createDocumentFragment();
 			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
 			var isCollapse = colAt >= 0 && lvl >= colAt;
 			
@@ -191,8 +192,6 @@ var JSONViewer = (function(document) {
 					outputParent.querySelector("ul").classList.add("hide");
 				}
 			}
-
-			return frag;
 		} else {
 			// simple values
 			outputParent.appendChild( createSimpleViewOf(value) );
@@ -215,7 +214,7 @@ var JSONViewer = (function(document) {
 		} else if (value === null) {
 			type = "null";
 			//asText = "null";
-		} else if (Object_prototype_toString.call(value) instanceof Date) {
+		} else if (Object_prototype_toString.call(value) === DatePrototypeAsString) {
 			type = "date";
 			asText = value.toJSON();//.toString();
 		}
