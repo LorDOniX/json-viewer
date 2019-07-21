@@ -100,7 +100,7 @@ var JSONViewer = (function(document) {
 						// null && date
 						if (!item || item instanceof Date) {
 							li.appendChild(document.createTextNode(isArray ? "" : key + ": "));
-							li.appendChild(createSimpleViewOf(item ? item : null));
+							li.appendChild(createSimpleViewOf(item ? item : null, true));
 						}
 						// array & object
 						else {
@@ -214,12 +214,11 @@ var JSONViewer = (function(document) {
 			type = "null";
 			//asText = "null";
 		} else if (isDate) {
-			type = "Date";
+			type = "date";
 			asText = value.toLocaleString();
 		}
-		// there is no need to take care of Date objects because they have already been delt with by toJSON
 
-		spanEl.classList.add("type-" + type);
+		spanEl.className = "type-" + type;
 		spanEl.textContent = asText;
 
 		return spanEl;
