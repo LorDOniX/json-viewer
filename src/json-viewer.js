@@ -1,29 +1,31 @@
 /**
  * JSONViewer - by Roman Makudera 2016 (c) MIT licence.
  */
-var JSONViewer = (function() {
-	var JSONViewer = function() {
-		this._dom = {};
-		this._dom.container = document.createElement("pre");
-		this._dom.container.classList.add("json-viewer");
+var JSONViewer = (function(document) {
+	var Object_prototype_toString = ({}).toString;
+	var DatePrototypeAsString = Object_prototype_toString.call(new Date);
+	
+	/** @constructor */
+	function JSONViewer() {
+		this._dom_container = document.createElement("pre");
+		this._dom_container.classList.add("json-viewer");
 	};
 
 	/**
 	 * Visualise JSON object.
 	 * 
 	 * @param {Object|Array} json Input value
-	 * @param {Number} [maxLvl] Process only to max level, where 0..n, -1 unlimited
-	 * @param {Number} [colAt] Collapse at level, where 0..n, -1 unlimited
+	 * @param {Number} [inputMaxLvl] Process only to max level, where 0..n, -1 unlimited
+	 * @param {Number} [inputColAt] Collapse at level, where 0..n, -1 unlimited
 	 */
-	JSONViewer.prototype.showJSON = function(json, maxLvl, colAt) {
-		maxLvl = typeof maxLvl === "number" ? maxLvl : -1; // max level
-		colAt = typeof colAt === "number" ? colAt : -1; // collapse at
-
-		var jsonData = this._processInput(json);
-		var walkEl = this._walk(jsonData, maxLvl, colAt, 0);
-
-		this._dom.container.innerHTML = "";
-		this._dom.container.appendChild(walkEl);
+	JSONViewer.prototype.showJSON = function(jsonValue, inputMaxLvl, inputColAt) {
+		// Process only to maxLvl, where 0..n, -1 unlimited
+		var maxLvl = typeof inputMaxLvl === "number" ? inputMaxLvl : -1; // max level
+		// Collapse at level colAt, where 0..n, -1 unlimited
+		var colAt = typeof inputColAt === "number" ? inputColAt : -1; // collapse at
+		
+		this._dom_container.innerHTML = "";
+		walkJSONTree(this._dom_container, jsonValue, maxLvl, colAt, 0);
 	};
 
 	/**
@@ -32,190 +34,167 @@ var JSONViewer = (function() {
 	 * @return {Element}
 	 */
 	JSONViewer.prototype.getContainer = function() {
-		return this._dom.container;
-	};
-
-	/**
-	 * Process input JSON - throws exception for unrecognized input.
-	 * 
-	 * @param {Object|Array} json Input value
-	 * @return {Object|Array}
-	 */
-	JSONViewer.prototype._processInput = function(json) {
-		if (json && typeof json === "object") {
-			return json;
-		}
-		else {
-			throw "Input value is not object or array!";
-		}
+		return this._dom_container;
 	};
 
 	/**
 	 * Recursive walk for input value.
 	 * 
+	 * @param {Element} outputParent is the Element that will contain the new DOM
 	 * @param {Object|Array} value Input value
 	 * @param {Number} maxLvl Process only to max level, where 0..n, -1 unlimited
 	 * @param {Number} colAt Collapse at level, where 0..n, -1 unlimited
 	 * @param {Number} lvl Current level
 	 */
-	JSONViewer.prototype._walk = function(value, maxLvl, colAt, lvl) {
-		var frag = document.createDocumentFragment();
-		var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
-		var isCollapse = colAt >= 0 && lvl >= colAt;
+	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
+		var isDate = Object_prototype_toString.call(value) === DatePrototypeAsString;
+		var realValue = !isDate && typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
+		if (typeof realValue === "object" && realValue !== null && !isDate) {
+			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
+			var isCollapse = colAt >= 0 && lvl >= colAt;
+			
+			var isArray = Array.isArray(realValue);
+			var items = isArray ? realValue : Object.keys(realValue);
 
-		switch (typeof value) {
-			case "object":
-				if (value) {
-					var isArray = Array.isArray(value);
-					var items = isArray ? value : Object.keys(value);
+			if (lvl === 0) {
+				// root level
+				var rootCount = _createItemsCount(items.length);
+				// hide/show
+				var rootLink = _createLink(isArray ? "[" : "{");
 
-					if (lvl === 0) {
-						// root level
-						var rootCount = this._createItemsCount(items.length);
-						// hide/show
-						var rootLink = this._createLink(isArray ? "[" : "{");
+				if (items.length) {
+					rootLink.addEventListener("click", function() {
+						if (isMaxLvl) return;
 
-						if (items.length) {
-							rootLink.addEventListener("click", function() {
-								if (isMaxLvl) return;
+						rootLink.classList.toggle("collapsed");
+						rootCount.classList.toggle("hide");
 
-								rootLink.classList.toggle("collapsed");
-								rootCount.classList.toggle("hide");
+						// main list
+						outputParent.querySelector("ul").classList.toggle("hide");
+					});
 
-								// main list
-								this._dom.container.querySelector("ul").classList.toggle("hide");
-							}.bind(this));
-
-							if (isCollapse) {
-								rootLink.classList.add("collapsed");
-								rootCount.classList.remove("hide");
-							}
-						}
-						else {
-							rootLink.classList.add("empty");
-						}
-
-						rootLink.appendChild(rootCount);
-						frag.appendChild(rootLink);
+					if (isCollapse) {
+						rootLink.classList.add("collapsed");
+						rootCount.classList.remove("hide");
 					}
-
-					if (items.length && !isMaxLvl) {
-						var len = items.length - 1;
-						var ulList = document.createElement("ul");
-						ulList.setAttribute("data-level", lvl);
-						ulList.classList.add("type-" + (isArray ? "array" : "object"));
-
-						items.forEach(function(key, ind) {
-							var item = isArray ? key : value[key];
-							var li = document.createElement("li");
-
-							if (typeof item === "object") {
-								var isEmpty = false;
-
-								// null && date
-								if (!item || item instanceof Date) {
-									li.appendChild(document.createTextNode(isArray ? "" : key + ": "));
-									li.appendChild(this._createSimple(item ? item : null));
-								}
-								// array & object
-								else {
-									var itemIsArray = Array.isArray(item);
-									var itemLen = itemIsArray ? item.length : Object.keys(item).length;
-
-									// empty
-									if (!itemLen) {
-										li.appendChild(document.createTextNode(key + ": " + (itemIsArray ? "[]" : "{}")));
-									}
-									else {
-										// 1+ items
-										var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "[" : "{");
-										var itemLink = this._createLink(itemTitle);
-										var itemsCount = this._createItemsCount(itemLen);
-
-										// maxLvl - only text, no link
-										if (maxLvl >= 0 && lvl + 1 >= maxLvl) {
-											li.appendChild(document.createTextNode(itemTitle));
-										}
-										else {
-											itemLink.appendChild(itemsCount);
-											li.appendChild(itemLink);
-										}
-
-										li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1));
-										li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
-										
-										var list = li.querySelector("ul");
-										var itemLinkCb = function() {
-											itemLink.classList.toggle("collapsed");
-											itemsCount.classList.toggle("hide");
-											list.classList.toggle("hide");
-										};
-
-										// hide/show
-										itemLink.addEventListener("click", itemLinkCb);
-
-										// collapse lower level
-										if (colAt >= 0 && lvl + 1 >= colAt) {
-											itemLinkCb();
-										}
-									}
-								}
-							}
-							// simple values
-							else {
-								// object keys with key:
-								if (!isArray) {
-									li.appendChild(document.createTextNode(key + ": "));
-								}
-
-								// recursive
-								li.appendChild(this._walk(item, maxLvl, colAt, lvl + 1));
-							}
-
-							// add comma to the end
-							if (ind < len) {
-								li.appendChild(document.createTextNode(","));
-							}
-
-							ulList.appendChild(li);
-						}, this);
-
-						frag.appendChild(ulList);
-					}
-					else if (items.length && isMaxLvl) {
-						var itemsCount = this._createItemsCount(items.length);
-						itemsCount.classList.remove("hide");
-
-						frag.appendChild(itemsCount);
-					}
-
-					if (lvl === 0) {
-						// empty root
-						if (!items.length) {
-							var itemsCount = this._createItemsCount(0);
-							itemsCount.classList.remove("hide");
-
-							frag.appendChild(itemsCount);
-						}
-
-						// root cover
-						frag.appendChild(document.createTextNode(isArray ? "]" : "}"));
-
-						// collapse
-						if (isCollapse) {
-							frag.querySelector("ul").classList.add("hide");
-						}
-					}
-					break;
+				}
+				else {
+					rootLink.classList.add("empty");
 				}
 
-			default:
-				// simple values
-				frag.appendChild(this._createSimple(value));
-				break;
-		}
+				rootLink.appendChild(rootCount);
+				outputParent.appendChild(rootLink); // output the rootLink
+			}
 
-		return frag;
+			if (items.length && !isMaxLvl) {
+				var len = items.length - 1;
+				var ulList = document.createElement("ul");
+				ulList.setAttribute("data-level", lvl);
+				ulList.classList.add("type-" + (isArray ? "array" : "object"));
+
+				items.forEach(function(key, ind) {
+					var item = isArray ? key : value[key];
+					var li = document.createElement("li");
+
+					if (typeof item === "object") {
+						// null && date
+						if (!item || item instanceof Date) {
+							li.appendChild(document.createTextNode(isArray ? "" : key + ": "));
+							li.appendChild(createSimpleViewOf(item ? item : null, true));
+						}
+						// array & object
+						else {
+							var itemIsArray = Array.isArray(item);
+							var itemLen = itemIsArray ? item.length : Object.keys(item).length;
+
+							// empty
+							if (!itemLen) {
+								li.appendChild(document.createTextNode(key + ": " + (itemIsArray ? "[]" : "{}")));
+							}
+							else {
+								// 1+ items
+								var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "[" : "{");
+								var itemLink = _createLink(itemTitle);
+								var itemsCount = _createItemsCount(itemLen);
+
+								// maxLvl - only text, no link
+								if (maxLvl >= 0 && lvl + 1 >= maxLvl) {
+									li.appendChild(document.createTextNode(itemTitle));
+								}
+								else {
+									itemLink.appendChild(itemsCount);
+									li.appendChild(itemLink);
+								}
+
+								walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
+								li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
+								
+								var list = li.querySelector("ul");
+								var itemLinkCb = function() {
+									itemLink.classList.toggle("collapsed");
+									itemsCount.classList.toggle("hide");
+									list.classList.toggle("hide");
+								};
+
+								// hide/show
+								itemLink.addEventListener("click", itemLinkCb);
+
+								// collapse lower level
+								if (colAt >= 0 && lvl + 1 >= colAt) {
+									itemLinkCb();
+								}
+							}
+						}
+					}
+					// simple values
+					else {
+						// object keys with key:
+						if (!isArray) {
+							li.appendChild(document.createTextNode(key + ": "));
+						}
+
+						// recursive
+						walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
+					}
+
+					// add comma to the end
+					if (ind < len) {
+						li.appendChild(document.createTextNode(","));
+					}
+
+					ulList.appendChild(li);
+				}, this);
+
+				outputParent.appendChild(ulList); // output ulList
+			}
+			else if (items.length && isMaxLvl) {
+				var itemsCount = _createItemsCount(items.length);
+				itemsCount.classList.remove("hide");
+
+				outputParent.appendChild(itemsCount); // output itemsCount
+			}
+
+			if (lvl === 0) {
+				// empty root
+				if (!items.length) {
+					var itemsCount = _createItemsCount(0);
+					itemsCount.classList.remove("hide");
+
+					outputParent.appendChild(itemsCount); // output itemsCount
+				}
+
+				// root cover
+				outputParent.appendChild(document.createTextNode(isArray ? "]" : "}"));
+
+				// collapse
+				if (isCollapse) {
+					outputParent.querySelector("ul").classList.add("hide");
+				}
+			}
+		} else {
+			// simple values
+			outputParent.appendChild( createSimpleViewOf(value, isDate) );
+		}
 	};
 
 	/**
@@ -224,28 +203,23 @@ var JSONViewer = (function() {
 	 * @param  {Number|String|null|undefined|Date} value Input value
 	 * @return {Element}
 	 */
-	JSONViewer.prototype._createSimple = function(value) {
+	function createSimpleViewOf(value, isDate) {
 		var spanEl = document.createElement("span");
 		var type = typeof value;
-		var txt = value;
+		var asText = "" + value;
 
 		if (type === "string") {
-			txt = '"' + value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '"';
-		}
-		else if (value === null) {
+			asText = '"' + value + '"';
+		} else if (value === null) {
 			type = "null";
-			txt = "null";
-		}
-		else if (value === undefined) {
-			txt = "undefined";
-		}
-		else if (value instanceof Date) {
+			//asText = "null";
+		} else if (isDate) {
 			type = "date";
-			txt = value.toString();
+			asText = value.toLocaleString();
 		}
 
-		spanEl.classList.add("type-" + type);
-		spanEl.innerHTML = txt;
+		spanEl.className = "type-" + type;
+		spanEl.textContent = asText;
 
 		return spanEl;
 	};
@@ -256,11 +230,10 @@ var JSONViewer = (function() {
 	 * @param  {Number} count Items count
 	 * @return {Element}
 	 */
-	JSONViewer.prototype._createItemsCount = function(count) {
+	function _createItemsCount(count) {
 		var itemsCount = document.createElement("span");
-		itemsCount.classList.add("items-ph");
-		itemsCount.classList.add("hide");
-		itemsCount.innerHTML = this._getItemsTitle(count);
+		itemsCount.className = "items-ph hide";
+		itemsCount.innerHTML = _getItemsTitle(count);
 
 		return itemsCount;
 	};
@@ -271,7 +244,7 @@ var JSONViewer = (function() {
 	 * @param  {String} title Link title
 	 * @return {Element}
 	 */
-	JSONViewer.prototype._createLink = function(title) {
+	function _createLink(title) {
 		var linkEl = document.createElement("a");
 		linkEl.classList.add("list-link");
 		linkEl.href = "javascript:void(0)";
@@ -286,11 +259,11 @@ var JSONViewer = (function() {
 	 * @param  {Number} count Items count
 	 * @return {String}
 	 */
-	JSONViewer.prototype._getItemsTitle = function(count) {
+	function _getItemsTitle(count) {
 		var itemsTxt = count > 1 || count === 0 ? "items" : "item";
 
 		return (count + " " + itemsTxt);
 	};
 
 	return JSONViewer;
-})();
+})(document);

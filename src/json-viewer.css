@@ -15,22 +15,25 @@
 	display: none;
 }
 
-.json-viewer ul li .type-string,
-.json-viewer ul li .type-date {
+.json-viewer .type-string {
 	color: #0B7500;
 }
 
-.json-viewer ul li .type-boolean {
+.json-viewer .type-date {
+	color: #CB7500;
+}
+
+.json-viewer .type-boolean {
 	color: #1A01CC;
 	font-weight: bold;
 }
 
-.json-viewer ul li .type-number {
+.json-viewer .type-number {
 	color: #1A01CC;
 }
 
-.json-viewer ul li .type-null {
-	color: red;
+.json-viewer .type-null, .json-viewer .type-undefined {
+	color: #90a;
 }
 
 .json-viewer a.list-link {
