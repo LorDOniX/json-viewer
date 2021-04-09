@@ -16,6 +16,8 @@
 		<button type="button" class="load-json">Load JSON</button>
 		<button type="button" class="collapse">Collapse to level 1</button>
 		<button type="button" class="maxlvl">Show JSON to level 1</button>
+		<input id="remember" type="checkbox"></input>
+		<label for="remember">Remember expand/collapse state when loading</label>
 	</div>
 	<h2>Output:</h2>
 	<div id="json"></div>
@@ -66,10 +68,17 @@
 		var loadJsonBtn = document.querySelector("button.load-json");
 		var collapseBtn = document.querySelector("button.collapse");
 		var maxlvlBtn = document.querySelector("button.maxlvl");
+		var rememberCb = document.querySelector("input#remember");
+
+		var maybeOldState = function() {
+			if (rememberCb.checked) {
+				return jsonViewer.getState();
+			}
+		}
 
 		loadJsonBtn.addEventListener("click", function() {
 			setJSON();
-			jsonViewer.showJSON(jsonObj);
+			jsonViewer.showJSON(jsonObj, null, null, maybeOldState());
 		});
 
 		collapseBtn.addEventListener("click", function() {

@@ -17,15 +17,16 @@ var JSONViewer = (function(document) {
 	 * @param {Object|Array} json Input value
 	 * @param {Number} [inputMaxLvl] Process only to max level, where 0..n, -1 unlimited
 	 * @param {Number} [inputColAt] Collapse at level, where 0..n, -1 unlimited
+	 * @param {Object} [inputState] Expand or collapse according to given state. See also getState().
 	 */
-	JSONViewer.prototype.showJSON = function(jsonValue, inputMaxLvl, inputColAt) {
+	JSONViewer.prototype.showJSON = function(jsonValue, inputMaxLvl, inputColAt, inputState) {
 		// Process only to maxLvl, where 0..n, -1 unlimited
 		var maxLvl = typeof inputMaxLvl === "number" ? inputMaxLvl : -1; // max level
 		// Collapse at level colAt, where 0..n, -1 unlimited
 		var colAt = typeof inputColAt === "number" ? inputColAt : -1; // collapse at
 		
 		this._dom_container.innerHTML = "";
-		walkJSONTree(this._dom_container, jsonValue, maxLvl, colAt, 0);
+		walkJSONTree(this._dom_container, jsonValue, maxLvl, colAt, 0, 'root', inputState);
 	};
 
 	/**
@@ -38,6 +39,18 @@ var JSONViewer = (function(document) {
 	};
 
 	/**
+	 * Get current expand/collapse state - this can be passed to showJSON to set initial state.
+	 * For each key, true == expanded and false == collapsed. For missing keys, colAt will apply.
+	 */
+	JSONViewer.prototype.getState = function() {
+		var state = {};
+		this._dom_container.querySelectorAll('a').forEach(function(a) {
+		    state[a.getAttribute('data-key')] = !a.classList.contains('collapsed')
+		})
+		return state;
+	};
+
+	/**
 	 * Recursive walk for input value.
 	 * 
 	 * @param {Element} outputParent is the Element that will contain the new DOM
@@ -46,12 +59,15 @@ var JSONViewer = (function(document) {
 	 * @param {Number} colAt Collapse at level, where 0..n, -1 unlimited
 	 * @param {Number} lvl Current level
 	 */
-	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
+	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl, path, state) {
 		var isDate = Object_prototype_toString.call(value) === DatePrototypeAsString;
 		var realValue = !isDate && typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
 		if (typeof realValue === "object" && realValue !== null && !isDate) {
 			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
 			var isCollapse = colAt >= 0 && lvl >= colAt;
+			if (state && state.hasOwnProperty(path)) {
+				isCollapse = !state[path];
+			}
 			
 			var isArray = Array.isArray(realValue);
 			var items = isArray ? realValue : Object.keys(realValue);
@@ -60,7 +76,7 @@ var JSONViewer = (function(document) {
 				// root level
 				var rootCount = _createItemsCount(items.length);
 				// hide/show
-				var rootLink = _createLink(isArray ? "[" : "{");
+				var rootLink = _createLink(isArray ? "[" : "{", path);
 
 				if (items.length) {
 					rootLink.addEventListener("click", function() {
@@ -94,6 +110,7 @@ var JSONViewer = (function(document) {
 
 				items.forEach(function(key, ind) {
 					var item = isArray ? key : value[key];
+					var itemPath = path + "." + (isArray ? ind : key);
 					var li = document.createElement("li");
 
 					if (typeof item === "object") {
@@ -114,7 +131,7 @@ var JSONViewer = (function(document) {
 							else {
 								// 1+ items
 								var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "[" : "{");
-								var itemLink = _createLink(itemTitle);
+								var itemLink = _createLink(itemTitle, itemPath);
 								var itemsCount = _createItemsCount(itemLen);
 
 								// maxLvl - only text, no link
@@ -126,7 +143,7 @@ var JSONViewer = (function(document) {
 									li.appendChild(itemLink);
 								}
 
-								walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
+								walkJSONTree(li, item, maxLvl, colAt, lvl + 1, itemPath, state);
 								li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
 								
 								var list = li.querySelector("ul");
@@ -140,8 +157,14 @@ var JSONViewer = (function(document) {
 								itemLink.addEventListener("click", itemLinkCb);
 
 								// collapse lower level
-								if (colAt >= 0 && lvl + 1 >= colAt) {
-									itemLinkCb();
+								if (state && state.hasOwnProperty(itemPath)) {
+									if (!state[itemPath]) {
+										itemLinkCb();
+									}
+								} else {
+									if (colAt >= 0 && lvl + 1 >= colAt) {
+										itemLinkCb();
+									}
 								}
 							}
 						}
@@ -154,7 +177,7 @@ var JSONViewer = (function(document) {
 						}
 
 						// recursive
-						walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
+						walkJSONTree(li, item, maxLvl, colAt, lvl + 1, itemPath, state);
 					}
 
 					// add comma to the end
@@ -244,11 +267,12 @@ var JSONViewer = (function(document) {
 	 * @param  {String} title Link title
 	 * @return {Element}
 	 */
-	function _createLink(title) {
+	function _createLink(title, path) {
 		var linkEl = document.createElement("a");
 		linkEl.classList.add("list-link");
 		linkEl.href = "javascript:void(0)";
 		linkEl.innerHTML = title || "";
+		linkEl.setAttribute("data-key", path);
 
 		return linkEl;
 	};
