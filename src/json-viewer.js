@@ -45,10 +45,13 @@ var JSONViewer = (function(document) {
 	 * @param {Number} maxLvl Process only to max level, where 0..n, -1 unlimited
 	 * @param {Number} colAt Collapse at level, where 0..n, -1 unlimited
 	 * @param {Number} lvl Current level
+	 * @return {Element} Nested list for this level, if any
 	 */
 	function walkJSONTree(outputParent, value, maxLvl, colAt, lvl) {
 		var isDate = Object_prototype_toString.call(value) === DatePrototypeAsString;
 		var realValue = !isDate && typeof value === "object" && value !== null && "toJSON" in value ? value.toJSON() : value;
+		var ulList;
+
 		if (typeof realValue === "object" && realValue !== null && !isDate) {
 			var isMaxLvl = maxLvl >= 0 && lvl >= maxLvl;
 			var isCollapse = colAt >= 0 && lvl >= colAt;
@@ -88,7 +91,7 @@ var JSONViewer = (function(document) {
 
 			if (items.length && !isMaxLvl) {
 				var len = items.length - 1;
-				var ulList = document.createElement("ul");
+				ulList = document.createElement("ul");
 				ulList.setAttribute("data-level", lvl);
 				ulList.classList.add("type-" + (isArray ? "array" : "object"));
 
@@ -126,10 +129,9 @@ var JSONViewer = (function(document) {
 									li.appendChild(itemLink);
 								}
 
-								walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
+								var list = walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
 								li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
 								
-								var list = li.querySelector("ul");
 								var itemLinkCb = function() {
 									itemLink.classList.toggle("collapsed");
 									itemsCount.classList.toggle("hide");
@@ -195,6 +197,8 @@ var JSONViewer = (function(document) {
 			// simple values
 			outputParent.appendChild( createSimpleViewOf(value, isDate) );
 		}
+
+		return ulList;
 	};
 
 	/**
@@ -233,7 +237,7 @@ var JSONViewer = (function(document) {
 	function _createItemsCount(count) {
 		var itemsCount = document.createElement("span");
 		itemsCount.className = "items-ph hide";
-		itemsCount.innerHTML = _getItemsTitle(count);
+		itemsCount.appendChild(document.createTextNode(_getItemsTitle(count)));
 
 		return itemsCount;
 	};
@@ -248,7 +252,8 @@ var JSONViewer = (function(document) {
 		var linkEl = document.createElement("a");
 		linkEl.classList.add("list-link");
 		linkEl.href = "javascript:void(0)";
-		linkEl.innerHTML = title || "";
+		linkEl.appendChild(document.createTextNode(title || ""));
+		linkEl.addEventListener('click', (ev) => { ev.preventDefault(); });
 
 		return linkEl;
 	};
