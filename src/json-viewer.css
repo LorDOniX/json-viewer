@@ -3,6 +3,10 @@
 	padding-left: 20px;
 }
 
+span.jsonseparators {
+	color: #77cee4ec;
+}
+
 .json-viewer ul {
 	list-style-type: none;
 	margin: 0;
