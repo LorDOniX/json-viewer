@@ -1,7 +1,7 @@
 /**
  * JSONViewer - by Roman Makudera 2016 (c) MIT licence.
  */
-var JSONViewer = (function(document) {
+ var JSONViewer = (function(document) {
 	var Object_prototype_toString = ({}).toString;
 	var DatePrototypeAsString = Object_prototype_toString.call(new Date);
 	
@@ -60,7 +60,7 @@ var JSONViewer = (function(document) {
 				// root level
 				var rootCount = _createItemsCount(items.length);
 				// hide/show
-				var rootLink = _createLink(isArray ? "[" : "{");
+				var rootLink = _createLink(isArray ? "<span class=\"jsonseparators\">[</span>" : "<span class=\"jsonseparators\">{</span>");
 
 				if (items.length) {
 					rootLink.addEventListener("click", function() {
@@ -109,11 +109,21 @@ var JSONViewer = (function(document) {
 
 							// empty
 							if (!itemLen) {
-								li.appendChild(document.createTextNode(key + ": " + (itemIsArray ? "[]" : "{}")));
+								let span = document.createElement('span');
+								span.classList.add('list-link');
+								let emptyArrayOrHt = document.createTextNode(key + ": ");
+								span.appendChild(emptyArrayOrHt);
+								li.appendChild(span);
+
+								let spanx = document.createElement('span');
+								spanx.classList.add('jsonseparators');
+								let emptyArrayOrHtx = document.createTextNode(itemIsArray ? "[]" : "{}");
+								spanx.appendChild(emptyArrayOrHtx);
+								li.appendChild(spanx);
 							}
 							else {
 								// 1+ items
-								var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "[" : "{");
+								var itemTitle = (typeof key === "string" ? key + ": " : "") + (itemIsArray ? "<span class=\"jsonseparators\">[</span>" : "<span class=\"jsonseparators\">{</span>");
 								var itemLink = _createLink(itemTitle);
 								var itemsCount = _createItemsCount(itemLen);
 
@@ -127,7 +137,12 @@ var JSONViewer = (function(document) {
 								}
 
 								walkJSONTree(li, item, maxLvl, colAt, lvl + 1);
-								li.appendChild(document.createTextNode(itemIsArray ? "]" : "}"));
+								
+								let endArrayOrHtElement = document.createElement('span');
+								endArrayOrHtElement.classList.add('jsonseparators');
+								let endArrayOrHt = document.createTextNode(itemIsArray ? "]" : "}");
+								endArrayOrHtElement.appendChild(endArrayOrHt);
+								li.appendChild(endArrayOrHtElement);
 								
 								var list = li.querySelector("ul");
 								var itemLinkCb = function() {
@@ -159,7 +174,11 @@ var JSONViewer = (function(document) {
 
 					// add comma to the end
 					if (ind < len) {
-						li.appendChild(document.createTextNode(","));
+						let commaElement = document.createElement('span');
+						commaElement.classList.add('jsonseparators');
+						let comma = document.createTextNode(",");
+						commaElement.appendChild(comma);
+						li.appendChild(commaElement);
 					}
 
 					ulList.appendChild(li);
@@ -184,7 +203,11 @@ var JSONViewer = (function(document) {
 				}
 
 				// root cover
-				outputParent.appendChild(document.createTextNode(isArray ? "]" : "}"));
+				let veryEndArrayOrHtElement = document.createElement('span');
+				veryEndArrayOrHtElement.classList.add('jsonseparators');
+				let veryEndArrayOrHt = document.createTextNode(isArray ? "]" : "}");
+				veryEndArrayOrHtElement.appendChild(veryEndArrayOrHt);
+				outputParent.appendChild(veryEndArrayOrHtElement);
 
 				// collapse
 				if (isCollapse) {
