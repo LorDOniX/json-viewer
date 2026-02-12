@@ -14,5 +14,5 @@ JSONViewer
 * see test/index.html for test
 
 ## credits
-* create by Roman Makudera 2016 (c)
+* create by Roman Makudera 2026 (c)
 * MIT licence, code is free to use

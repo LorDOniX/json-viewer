@@ -20,11 +20,14 @@
 	<h2>Output:</h2>
 	<div id="json"></div>
 	<script>
-		var jsonObj = {};
-		var jsonViewer = new JSONViewer();
-		document.querySelector("#json").appendChild(jsonViewer.getContainer());
+		let jsonObj = {};
+		const jsonViewer = new JSONViewer();
+		const elem = jsonViewer.getContainer();
 
-		var textarea = document.querySelector("textarea");
+		document.querySelector("#json").append(elem);
+
+		const textarea = document.querySelector("textarea");
+
 		textarea.value = JSON.stringify({
 			key1: "<script>alert('no xss!')<\/script>",
 			key2: 12345,
@@ -50,9 +53,10 @@
 		});
 
 		// textarea value to JSON object
-		var setJSON = function() {
+		const setJSON = () => {
 			try {
-				var value = textarea.value;
+				const value = textarea.value;
+
 				jsonObj = JSON.parse(value);
 			}
 			catch (err) {
@@ -63,20 +67,20 @@
 		// load default value
 		setJSON();
 
-		var loadJsonBtn = document.querySelector("button.load-json");
-		var collapseBtn = document.querySelector("button.collapse");
-		var maxlvlBtn = document.querySelector("button.maxlvl");
+		const loadJsonBtn = document.querySelector("button.load-json");
+		const collapseBtn = document.querySelector("button.collapse");
+		const maxlvlBtn = document.querySelector("button.maxlvl");
 
-		loadJsonBtn.addEventListener("click", function() {
+		loadJsonBtn.addEventListener("click", () => {
 			setJSON();
 			jsonViewer.showJSON(jsonObj);
 		});
 
-		collapseBtn.addEventListener("click", function() {
+		collapseBtn.addEventListener("click", () => {
 			jsonViewer.showJSON(jsonObj, null, 1);
 		});
 
-		maxlvlBtn.addEventListener("click", function() {
+		maxlvlBtn.addEventListener("click", () => {
 			jsonViewer.showJSON(jsonObj, 1);
 		});
 	</script>
